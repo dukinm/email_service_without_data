@@ -1,0 +1,76 @@
+version: "2"
+services:
+    web:
+        image: nginx:latest
+        restart: always
+        volumes:
+            - ./www:/var/www/html
+            - ./nginx/etc/nginx/conf.d:/etc/nginx/conf.d
+        ports:
+            - 9980:80
+            - 9981:443
+        links:
+            - php
+        networks:
+            - bridge_ntw
+        depends_on:
+            - php
+    php:
+        build: ./docker/php
+        links:
+            - db
+        volumes:
+            - ./www:/var/www/html
+            - ./php-fpm.d/www.conf:/usr/local/etc/php-fpm.d/www.conf
+        networks:
+            - bridge_ntw
+    db:
+        image: mysql
+        restart: always
+        environment:
+            MYSQL_DATABASE: 'email'
+            MYSQL_ROOT_PASSWORD: 'oV6LZHyUC7bd'
+        ports:
+            - '9982:3306'
+        volumes:
+            - ./db/mysql/etc/mysql:/etc/mysql
+            - ./db/mysql/logs/mysql:/var/log/mysql
+            - ./db/mysql/lib/mysql:/var/lib/mysql
+            - ./db/mysql/mysql-files:/var/lib/mysql-files
+        networks:
+            - bridge_ntw
+    ch_server:
+        image: yandex/clickhouse-server
+        ports:
+            - "9983:8123"
+        volumes:
+            - ./db/clickhouse/lib/clickhouse:/var/lib/clickhouse
+        networks:
+            - bridge_ntw
+    grafana:
+        image: grafana/grafana
+        ports:
+            - 9986:3000
+        environment:
+            GF_INSTALL_PLUGINS: 'vertamedia-clickhouse-datasource'
+        volumes:
+            - ./grafana/lib/grafana:/var/lib/grafana
+            - ./grafana/log/grafana:/var/log/grafana
+        networks:
+            - bridge_ntw
+    rabbitmq:
+        image: rabbitmq:3-management-alpine
+        ports:
+            - 9984:5672
+            - 9985:15672
+        volumes:
+            - ~/rabbitmq/lib/rabbitmq/:/var/lib/rabbitmq/
+            - ~/rabbitmq/log/rabbitmq/:/var/log/rabbitmq
+        networks:
+            - bridge_ntw
+networks:
+    bridge_ntw:
+        driver: bridge
+        ipam:
+            config:
+                - subnet: 10.222.1.0/24
