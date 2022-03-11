@@ -1,0 +1,7 @@
+/vendor
+/.idea
+/coverage
+/utils/ccat/ccat
+/utils/ccat/ccat_darwin
+/utils/ccat/ccat_linux
+composer.lock
